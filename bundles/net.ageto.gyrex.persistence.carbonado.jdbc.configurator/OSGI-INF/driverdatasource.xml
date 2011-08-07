@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="net.ageto.gyrex.persistence.carbonado.jdbc.configurator.DriverDataSource">
+   <implementation class="net.ageto.gyrex.persistence.carbonado.jdbc.configurator.internal.DriverDataSource"/>
+   <property name="service.vendor" type="String" value="AGETO Labs"/>
+   <property name="service.description" type="String" value="Database Driver DataSource"/>
+   <service>
+      <provide interface="net.ageto.gyrex.persistence.carbonado.storage.spi.jdbc.DataSourceSupport"/>
+   </service>
+   <property name="datasource.type" type="String" value="driver"/>
+</scr:component>

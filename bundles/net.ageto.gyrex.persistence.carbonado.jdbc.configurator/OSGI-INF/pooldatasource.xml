@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="net.ageto.gyrex.persistence.carbonado.jdbc.configurator.PoolDataSource">
+   <implementation class="net.ageto.gyrex.persistence.carbonado.jdbc.configurator.internal.PooledDataSource"/>
+   <property name="service.vendor" type="String" value="AGETO Labs"/>
+   <property name="service.description" type="String" value="Connection Pool DataSource"/>
+   <property name="datasource.type" type="String" value="pool"/>
+   <service>
+      <provide interface="net.ageto.gyrex.persistence.carbonado.storage.spi.jdbc.DataSourceSupport"/>
+   </service>
+   <reference bind="setDriverDataSource" cardinality="1..1" interface="net.ageto.gyrex.persistence.carbonado.storage.spi.jdbc.DataSourceSupport" name="DataSourceSupport" policy="static" target="(datasource.type=driver)"/>
+</scr:component>

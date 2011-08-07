@@ -1,0 +1,5 @@
+# global debug flag
+net.ageto.gyrex.persistence.carbonado/debug=true
+
+# debug SQL statements
+net.ageto.gyrex.persistence.carbonado/dataSourceLogging=true

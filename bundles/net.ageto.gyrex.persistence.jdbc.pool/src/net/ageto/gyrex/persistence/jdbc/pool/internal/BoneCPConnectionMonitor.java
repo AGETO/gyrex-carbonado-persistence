@@ -12,6 +12,7 @@
 package net.ageto.gyrex.persistence.jdbc.pool.internal;
 
 import java.lang.reflect.Method;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
@@ -86,6 +87,17 @@ public class BoneCPConnectionMonitor extends AbstractConnectionHook {
 	public void onCheckIn(final ConnectionHandle connection) {
 		if (PoolDebug.debug) {
 			LOG.debug("[{}] {}: {} - {}", new Object[] { poolId, debugInfo, "connection check-in", connection });
+		}
+
+		// reset catalog on check-in
+		try {
+			if (connection.getCatalog() != null) {
+				connection.setCatalog(null);
+			}
+		} catch (final SQLException ignored) {
+			if (PoolDebug.debug) {
+				LOG.debug("[{}] {}: unable to reset catalog on connection {} - {}", new Object[] { poolId, debugInfo, connection, ignored });
+			}
 		}
 	}
 

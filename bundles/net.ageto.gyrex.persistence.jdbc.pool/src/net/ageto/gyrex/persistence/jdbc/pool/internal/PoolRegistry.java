@@ -12,6 +12,7 @@
 package net.ageto.gyrex.persistence.jdbc.pool.internal;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -19,7 +20,12 @@ import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
+import org.eclipse.gyrex.preferences.CloudScope;
 import org.eclipse.gyrex.server.Platform;
+
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -41,6 +47,7 @@ import com.jolbox.bonecp.BoneCPDataSource;
  */
 public class PoolRegistry implements IPoolDataSourceFactoryConstants {
 
+	private static final String PREF_KEY_FLUSH_COUNT = "flushCount";
 	private static final Logger LOG = LoggerFactory.getLogger(PoolRegistry.class);
 
 	static String createDebugInfo(final PoolDefinition pool, final ServiceReference<DataSourceFactory> driverServiceRef) {
@@ -80,17 +87,30 @@ public class PoolRegistry implements IPoolDataSourceFactoryConstants {
 		return info.toString();
 	}
 
-	ConcurrentMap<String, DataSource> poolDataSources = new ConcurrentHashMap<String, DataSource>();
+	private final ConcurrentMap<String, BoneCPDataSource> poolDataSources = new ConcurrentHashMap<String, BoneCPDataSource>();
 
-	/**
-	 *
-	 */
+	private final IPreferenceChangeListener flushListener = new IPreferenceChangeListener() {
+		@Override
+		public void preferenceChange(final PreferenceChangeEvent event) {
+			if (PREF_KEY_FLUSH_COUNT.equals(event.getKey())) {
+				flushAll();
+			}
+		}
+	};
+
 	public void close() {
-		// TODO Auto-generated method stub
+		// remove preference listener
+		CloudScope.INSTANCE.getNode(PoolActivator.SYMBOLIC_NAME).removePreferenceChangeListener(flushListener);
 
+		// flush all
+		flushAll();
 	}
 
-	private DataSource createPoolDataSource(final PoolDefinition pool) throws IllegalStateException {
+	private BoneCPDataSource createPoolDataSource(final PoolDefinition pool) throws IllegalStateException {
+		if (PoolDebug.debug) {
+			LOG.debug("Initializing new connection pool {}", pool.getPoolId());
+		}
+
 		// create driver DS
 		final String driverDataSourceFactoryFilter = pool.getDriverDataSourceFactoryFilter();
 		if (null == driverDataSourceFactoryFilter) {
@@ -197,6 +217,57 @@ public class PoolRegistry implements IPoolDataSourceFactoryConstants {
 		return ds;
 	}
 
+	/**
+	 * flushes all repos
+	 */
+	void flushAll() {
+		// use synchronized block to avoid concurrent pool creations
+		synchronized (poolDataSources) {
+			final Collection<BoneCPDataSource> values = poolDataSources.values();
+			for (final Iterator stream = values.iterator(); stream.hasNext();) {
+				final BoneCPDataSource pool = (BoneCPDataSource) stream.next();
+				if (PoolDebug.debug) {
+					LOG.debug("Flushing connection pool {}", pool);
+				}
+				pool.close();
+				stream.remove();
+			}
+		}
+		LOG.info("Successfully flushed all connection pools.");
+	}
+
+	public void flushDataSource(final String poolId) {
+		// remove existing data source
+		final BoneCPDataSource dataSource = poolDataSources.remove(poolId);
+		if (null != dataSource) {
+			if (PoolDebug.debug) {
+				LOG.debug("Flushing connection pool {}", dataSource);
+			}
+			dataSource.close();
+			LOG.info("Successfully flushed connection pool {}.", dataSource);
+		}
+	}
+
+	public void flushGlobal() throws BackingStoreException {
+		if (PoolDebug.debug) {
+			LOG.debug("Sending global connection pool flush on all nodes in the cloud...");
+		}
+
+		// get node
+		final IEclipsePreferences node = CloudScope.INSTANCE.getNode(PoolActivator.SYMBOLIC_NAME);
+
+		// sync
+		node.sync();
+
+		// trigger an update to the preference value
+		node.putLong(PREF_KEY_FLUSH_COUNT, node.getLong(PREF_KEY_FLUSH_COUNT, 0) + 1);
+
+		// flush
+		node.flush();
+
+		LOG.info("Global connection pool flush sent to all nodes in the cloud (flushes so far: {}).", node.getInt(PREF_KEY_FLUSH_COUNT, 0));
+	}
+
 	private String getConnectionTestStatement(final ServiceReference<DataSourceFactory> serviceReference) {
 		final String driverClass = (String) serviceReference.getProperty(DataSourceFactory.OSGI_JDBC_DRIVER_CLASS);
 		final String driverName = (String) serviceReference.getProperty(DataSourceFactory.OSGI_JDBC_DRIVER_NAME);
@@ -208,8 +279,11 @@ public class PoolRegistry implements IPoolDataSourceFactoryConstants {
 	}
 
 	public DataSource getDataSource(final String poolId) {
-		DataSource dataSource = poolDataSources.get(poolId);
+		BoneCPDataSource dataSource = poolDataSources.get(poolId);
 		if (null != dataSource) {
+			if (PoolDebug.debug) {
+				LOG.debug("Returing initialized connection pool {}", dataSource);
+			}
 			return dataSource;
 		}
 
@@ -231,11 +305,26 @@ public class PoolRegistry implements IPoolDataSourceFactoryConstants {
 			if (null == dataSource) {
 				dataSource = createPoolDataSource(pool);
 				poolDataSources.put(poolId, dataSource);
+				LOG.info("Successfully initialized connection pool {}.", dataSource);
+			} else {
+				if (PoolDebug.debug) {
+					LOG.debug("Found initialized connection pool {}", dataSource);
+				}
 			}
 		}
 
+		// register with the preference node so that we can sync flushes across all nodes in the cloud
+		CloudScope.INSTANCE.getNode(PoolActivator.SYMBOLIC_NAME).addPreferenceChangeListener(flushListener);
+
 		// we should have a DS at this point
+		if (PoolDebug.debug) {
+			LOG.debug("Returing connection pool {}", dataSource);
+		}
 		return dataSource;
+	}
+
+	public boolean isActive(final String poolId) {
+		return poolDataSources.containsKey(poolId);
 	}
 
 }

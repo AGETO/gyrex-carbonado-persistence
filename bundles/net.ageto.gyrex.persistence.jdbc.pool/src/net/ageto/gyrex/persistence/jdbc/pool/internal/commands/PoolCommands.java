@@ -25,7 +25,12 @@ public class PoolCommands extends BaseCommandProvider {
 	 */
 	public PoolCommands() {
 		registerCommand("ls", ListPools.class);
+
 		registerCommand("create", CreatePool.class);
+		registerCommand("configDriver", ConfigurePoolDriverProperty.class);
+
+		registerCommand("flush", FlushPool.class);
+		registerCommand("remove", RemovePool.class);
 	}
 
 	public void _pool(final CommandInterpreter ci) {

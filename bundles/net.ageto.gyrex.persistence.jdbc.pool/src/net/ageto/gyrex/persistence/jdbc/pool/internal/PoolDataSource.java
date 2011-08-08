@@ -18,12 +18,16 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A data source which wraps another data source and configures the returned
  * connection to use a specific catalog.
  */
 public class PoolDataSource implements DataSource {
+
+	private static final Logger LOG = LoggerFactory.getLogger(PoolDataSource.class);
 
 	private final String catalog;
 	private final String poolId;
@@ -44,6 +48,9 @@ public class PoolDataSource implements DataSource {
 	private Connection configure(final Connection connection) throws SQLException {
 		// set the catalog to operate it
 		if (null != catalog) {
+			if (PoolDebug.debug) {
+				LOG.debug("Setting catalog {} for connection {} from pool {}", new Object[] { catalog, connection, poolId });
+			}
 			connection.setCatalog(catalog);
 		}
 		return connection;

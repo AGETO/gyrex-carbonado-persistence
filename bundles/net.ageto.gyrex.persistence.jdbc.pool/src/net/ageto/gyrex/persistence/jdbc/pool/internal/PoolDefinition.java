@@ -123,6 +123,11 @@ public class PoolDefinition implements IPoolDataSourceFactoryConstants {
 		getPoolsNode().flush();
 	}
 
+	public void removeDriverProperty(final String key) throws BackingStoreException {
+		final Preferences node = getPoolNode().node(NODE_DRIVER_PROPERTIES);
+		node.remove(key);
+	}
+
 	public void setConnectionTimeoutInMs(final int connectionTimeout) {
 		getPoolNode().putInt(POOL_CONNECTION_TIMEOUT_IN_MS, connectionTimeout);
 	}

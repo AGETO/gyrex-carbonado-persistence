@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="net.ageto.gyrex.persistence.jdbc.pool.commands.component">
+   <implementation class="net.ageto.gyrex.persistence.jdbc.pool.internal.commands.PoolCommands"/>
+   <service>
+      <provide interface="org.eclipse.osgi.framework.console.CommandProvider"/>
+   </service>
+   <property name="service.vendor" type="String" value="AGETO Labs"/>
+   <property name="service.description" type="String" value="Commands for managing the connection pools."/>
+</scr:component>

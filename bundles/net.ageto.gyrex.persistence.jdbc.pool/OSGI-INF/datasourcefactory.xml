@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="net.ageto.gyrex.persistence.jdbc.pool.datasourcefactory.component">
+   <implementation class="net.ageto.gyrex.persistence.jdbc.pool.internal.PoolDataSourceFactory"/>
+   <service>
+      <provide interface="org.osgi.service.jdbc.DataSourceFactory"/>
+   </service>
+   <property name="service.vendor" type="String" value="AGETO Labs"/>
+   <property name="service.description" type="String" value="OSGi JDBC Service DataSourceFactory implementation backed by configurable connection pools."/>
+   <property name="osgi.jdbc.driver.class" type="String" value="net.ageto.gyrex.persistence.jdbc.pool.class"/>
+   <property name="osgi.jdbc.driver.name" type="String" value="Gyrex JDBC Pool"/>
+   <property name="osgi.jdbc.driver.version" type="String" value="4.0"/>
+</scr:component>

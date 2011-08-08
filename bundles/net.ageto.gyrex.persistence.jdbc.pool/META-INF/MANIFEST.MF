@@ -1,0 +1,23 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: BoneCP Based Connection Pooling for OSGi
+Bundle-SymbolicName: net.ageto.gyrex.persistence.jdbc.pool
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: net.ageto.gyrex.persistence.jdbc.pool.internal.PoolActivator
+Bundle-Vendor: AGETO Labs
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Service-Component: OSGI-INF/datasourcefactory.xml, OSGI-INF/commands.xml
+Import-Package: com.jolbox.bonecp;version="[0.7.1,1.0.0)",
+ com.jolbox.bonecp.hooks;version="[0.7.1,1.0.0)",
+ org.apache.commons.lang;version="[2.4.0,3.0.0)",
+ org.apache.commons.lang.exception;version="[2.4.0,3.0.0)",
+ org.eclipse.osgi.framework.console;version="[1.0.0,2.0.0)",
+ org.kohsuke.args4j;version="[2.0.12,3.0.0)",
+ org.osgi.framework;version="[1.3.0,2.0.0)",
+ org.osgi.service.jdbc;version="[1.0.0,1.1.0)",
+ org.osgi.util.tracker;version="[1.3.1,2.0.0)",
+ org.slf4j;version="[1.6.1,2.0.0)"
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.eclipse.gyrex.boot;bundle-version="[1.0.0,2.0.0)",
+ org.eclipse.gyrex.common;bundle-version="[1.0.0,2.0.0)",
+ org.eclipse.gyrex.preferences;bundle-version="[1.0.0,2.0.0)"

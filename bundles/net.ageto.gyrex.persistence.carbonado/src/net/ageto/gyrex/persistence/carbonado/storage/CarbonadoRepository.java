@@ -32,7 +32,7 @@ import org.apache.commons.lang.StringUtils;
  * {@link RepositoryContentType#getMediaTypeType()}.
  * </p>
  */
-public abstract class CarbonadoRepository extends Repository {
+public abstract class CarbonadoRepository extends Repository implements ICarbonadoRepositoryConstants {
 
 	public static final String REPOSITORY_TYPE_JDBC = "repository_type_jdbc";
 
@@ -43,11 +43,23 @@ public abstract class CarbonadoRepository extends Repository {
 	 */
 	public static final String MEDIA_TYPE_TYPE = "x-ageto-carbonado-repository";
 
+	/** @deprecated */
+	@Deprecated
 	public static final String TYPE = "db_type";
+	/** @deprecated */
+	@Deprecated
 	public static final String DBNAME = "db_name";
+	/** @deprecated */
+	@Deprecated
 	public static final String HOSTNAME = "db_hostname";
+	/** @deprecated */
+	@Deprecated
 	public static final String PORT = "db_port";
+	/** @deprecated */
+	@Deprecated
 	public static final String USERNAME = "db_username";
+	/** @deprecated */
+	@Deprecated
 	public static final String PASSWORD = "db_password";
 
 	private final AtomicReference<com.amazon.carbonado.Repository> repositoryRef = new AtomicReference<com.amazon.carbonado.Repository>();

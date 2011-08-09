@@ -32,6 +32,10 @@ public class PoolDataSource implements DataSource {
 	private final String catalog;
 	private final String poolId;
 
+	private final String name;
+
+	private final String description;
+
 	/**
 	 * Creates a new instance.
 	 * 
@@ -39,9 +43,15 @@ public class PoolDataSource implements DataSource {
 	 *            the data source to wrap
 	 * @param catalog
 	 *            the catalog to use for the connection
+	 * @param description
+	 *            the data source description (for debugging purposes)
+	 * @param name
+	 *            the data source name
 	 */
-	public PoolDataSource(final String poolId, final String catalog) {
+	public PoolDataSource(final String poolId, final String catalog, final String name, final String description) {
 		this.poolId = poolId;
+		this.name = StringUtils.trimToNull(name);
+		this.description = StringUtils.trimToNull(description);
 		this.catalog = StringUtils.trimToNull(catalog);
 	}
 
@@ -98,10 +108,20 @@ public class PoolDataSource implements DataSource {
 	@Override
 	public String toString() {
 		final StringBuilder builder = new StringBuilder();
-		builder.append("ConnectionCustomizingDataSource [poolId=");
-		builder.append(poolId);
-		builder.append(", catalog=");
-		builder.append(catalog);
+		builder.append("PoolDataSource ");
+		builder.append(poolId).append(" [");
+		String spearator = "";
+		if (null != description) {
+			builder.append(description);
+			spearator = ", ";
+		}
+		if (null != name) {
+			builder.append(spearator).append("name=").append(name);
+			spearator = ", ";
+		}
+		if (null != catalog) {
+			builder.append(spearator).append("catalog=").append(catalog);
+		}
 		builder.append("]");
 		return builder.toString();
 	}

@@ -14,11 +14,16 @@ package net.ageto.gyrex.persistence.carbonado.internal;
 import org.eclipse.gyrex.common.runtime.BaseBundleActivator;
 import org.eclipse.gyrex.common.services.IServiceProxy;
 
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.jdbc.DataSourceFactory;
 
 import net.ageto.gyrex.persistence.carbonado.storage.internal.jdbc.SchemaSupportTracker;
 import net.ageto.gyrex.persistence.carbonado.storage.spi.jdbc.DataSourceSupport;
+import net.ageto.gyrex.persistence.jdbc.pool.IPoolDataSourceFactoryConstants;
 
 /**
  * Bundle activator.
@@ -27,6 +32,11 @@ public class CarbonadoActivator extends BaseBundleActivator {
 
 	public static final String SYMBOLIC_NAME = "net.ageto.gyrex.persistence.carbonado";
 	private static volatile CarbonadoActivator instance;
+
+	/**
+	 * special filter for finding the pooled {@link DataSourceFactory}
+	 */
+	private static final String POOL_DSF_FILTER = "(&(" + Constants.OBJECTCLASS + "=" + DataSourceFactory.class.getName() + ")(" + DataSourceFactory.OSGI_JDBC_DRIVER_CLASS + "=" + IPoolDataSourceFactoryConstants.DRIVER_CLASS + "))";
 
 	/**
 	 * Returns the instance.
@@ -43,6 +53,7 @@ public class CarbonadoActivator extends BaseBundleActivator {
 
 	private SchemaSupportTracker schemaSupportTracker;
 	private ServiceRegistration<?> repositoryProviderRegistration;
+
 	private IServiceProxy<DataSourceSupport> dataSourceSupport;
 
 	/**
@@ -94,6 +105,23 @@ public class CarbonadoActivator extends BaseBundleActivator {
 		return CarbonadoDebug.class;
 	}
 
+	public DataSourceFactory getPoolDataSourceFactory() {
+		final Bundle bundle = getBundle();
+		if (null == bundle) {
+			throw createBundleInactiveException();
+		}
+		final BundleContext bundleContext = bundle.getBundleContext();
+		if (null == bundleContext) {
+			throw new IllegalStateException("missing bundle context");
+		}
+
+		try {
+			return getServiceHelper().trackService(DataSourceFactory.class, bundleContext.createFilter(POOL_DSF_FILTER)).getService();
+		} catch (final InvalidSyntaxException e) {
+			throw new IllegalStateException(String.format("Unable to locate pool data source factory. Please check the filter string. %s", e.getMessage()), e);
+		}
+	}
+
 	/**
 	 * Returns the schemaSupportTracker.
 	 * 
@@ -106,4 +134,5 @@ public class CarbonadoActivator extends BaseBundleActivator {
 		}
 		return supportTracker;
 	}
+
 }

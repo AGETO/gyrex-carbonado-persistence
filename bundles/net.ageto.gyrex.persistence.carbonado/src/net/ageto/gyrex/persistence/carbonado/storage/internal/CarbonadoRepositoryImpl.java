@@ -13,6 +13,7 @@ package net.ageto.gyrex.persistence.carbonado.storage.internal;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,6 +34,8 @@ import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 
+import org.osgi.service.jdbc.DataSourceFactory;
+
 import org.apache.commons.lang.text.StrBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +43,8 @@ import org.slf4j.LoggerFactory;
 import net.ageto.gyrex.persistence.carbonado.internal.CarbonadoActivator;
 import net.ageto.gyrex.persistence.carbonado.internal.CarbonadoDebug;
 import net.ageto.gyrex.persistence.carbonado.storage.CarbonadoRepository;
+import net.ageto.gyrex.persistence.carbonado.storage.ICarbonadoRepositoryConstants;
+import net.ageto.gyrex.persistence.jdbc.pool.IPoolDataSourceFactoryConstants;
 
 import com.amazon.carbonado.Repository;
 import com.amazon.carbonado.repo.jdbc.JDBCRepositoryBuilder;
@@ -73,17 +78,47 @@ public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 		carbonadoRepositoryContentTypeSupport = new CarbonadoRepositoryContentTypeSupport(this);
 	}
 
+	private DataSource createDataSource() throws Exception {
+		// check if we use a shared pool
+		final String poolId = repositoryPreferences.get(JDBC_POOL_ID, null);
+		if (null != poolId) {
+			if (CarbonadoDebug.debug) {
+				LOG.debug("Using connection pool {}...", poolId);
+			}
+			final DataSourceFactory dataSourceFactory = CarbonadoActivator.getInstance().getPoolDataSourceFactory();
+			final Properties dataSourceProperties = new Properties();
+			dataSourceProperties.put(IPoolDataSourceFactoryConstants.POOL_ID, poolId);
+			dataSourceProperties.put(DataSourceFactory.JDBC_DATASOURCE_NAME, getRepositoryId());
+			dataSourceProperties.put(DataSourceFactory.JDBC_DESCRIPTION, String.format("DataSource for repository %s using database %s", getRepositoryId(), String.valueOf(repositoryPreferences.get(JDBC_DATABASE_NAME, null))));
+			dataSourceProperties.put(DataSourceFactory.JDBC_DATABASE_NAME, repositoryPreferences.get(JDBC_DATABASE_NAME, null));
+			return dataSourceFactory.createDataSource(dataSourceProperties);
+		}
+
+		// otherwise, fallback to old implementation
+		return CarbonadoActivator.getInstance().getDataSourceSupport().createDataSource(getRepositoryId(), repositoryPreferences);
+	}
+
 	@Override
 	protected Repository createRepository() throws Exception {
+		// migrate old settings
+		final String databaseName = repositoryPreferences.get("db_name", null);
+		if (null != databaseName) {
+			if (null == repositoryPreferences.get(JDBC_DATABASE_NAME, null)) {
+				repositoryPreferences.put(JDBC_DATABASE_NAME, databaseName, false);
+			}
+			repositoryPreferences.remove("db_name");
+			repositoryPreferences.flush();
+		}
+
 		// create the data source first
-		final DataSource dataSource = CarbonadoActivator.getInstance().getDataSourceSupport().createDataSource(getRepositoryId(), repositoryPreferences);
+		final DataSource dataSource = createDataSource();
 		try {
 			final JDBCRepositoryBuilder builder = new JDBCRepositoryBuilder();
 			builder.setDataSource(dataSource);
 			builder.setName(generateRepoName(getRepositoryId(), repositoryPreferences));
 			builder.setAutoVersioningEnabled(true, null);
 			builder.setDataSourceLogging(CarbonadoDebug.dataSourceLogging);
-			builder.setCatalog(repositoryPreferences.get(CarbonadoRepository.DBNAME, null)); // MySQL database name
+			builder.setCatalog(repositoryPreferences.get(ICarbonadoRepositoryConstants.JDBC_DATABASE_NAME, null)); // MySQL database name
 			return builder.build();
 		} catch (final Exception e) {
 			// close data source on error (COLUMBUS-1177)
@@ -100,11 +135,16 @@ public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 		final StrBuilder name = new StrBuilder();
 		name.append(repositoryId);
 		name.append(" (db ");
-		name.append(preferences.get(CarbonadoRepository.DBNAME, "<unknown>"));
-		name.append(", host ");
-		name.append(preferences.get(CarbonadoRepository.HOSTNAME, "<unknown>"));
-		name.append(", user ");
-		name.append(preferences.get(CarbonadoRepository.USERNAME, "<unknown>"));
+		name.append(preferences.get(ICarbonadoRepositoryConstants.JDBC_DATABASE_NAME, "<unknown>"));
+		final String poolId = preferences.get(ICarbonadoRepositoryConstants.JDBC_POOL_ID, null);
+		if (null != poolId) {
+			name.append(", pool ").append(poolId);
+		} else {
+			name.append(", host ");
+			name.append(preferences.get(CarbonadoRepository.HOSTNAME, "<unknown>"));
+			name.append(", user ");
+			name.append(preferences.get(CarbonadoRepository.USERNAME, "<unknown>"));
+		}
 		name.append(")");
 		return name.toString();
 	}

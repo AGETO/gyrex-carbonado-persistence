@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.ageto.gyrex.persistence.carbonado.storage.CarbonadoRepository;
+import net.ageto.gyrex.persistence.carbonado.storage.ICarbonadoRepositoryConstants;
 import net.ageto.gyrex.persistence.carbonado.storage.spi.jdbc.DataSourceSupport;
 
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
@@ -89,7 +90,7 @@ public class DriverDataSource extends DataSourceSupport {
 	}
 
 	private String getDatabaseName(final IRepositoryPreferences prefs) {
-		return prefs.get(CarbonadoRepository.DBNAME, "columbus");
+		return prefs.get(ICarbonadoRepositoryConstants.JDBC_DATABASE_NAME, prefs.get(CarbonadoRepository.DBNAME, "columbus"));
 	}
 
 	@Override

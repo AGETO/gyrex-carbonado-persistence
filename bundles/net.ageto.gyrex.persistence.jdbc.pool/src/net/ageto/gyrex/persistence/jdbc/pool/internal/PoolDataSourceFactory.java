@@ -50,7 +50,7 @@ public class PoolDataSourceFactory implements DataSourceFactory, IPoolDataSource
 		}
 
 		// return data source
-		return new PoolDataSource(poolId, databaseName);
+		return new PoolDataSource(poolId, databaseName, props.getProperty(JDBC_DATASOURCE_NAME), props.getProperty(JDBC_DESCRIPTION));
 	}
 
 	@Override

@@ -16,19 +16,18 @@ import org.eclipse.gyrex.persistence.storage.provider.RepositoryProvider;
 import org.eclipse.gyrex.persistence.storage.settings.IRepositoryPreferences;
 
 import net.ageto.gyrex.persistence.carbonado.storage.CarbonadoRepository;
+import net.ageto.gyrex.persistence.carbonado.storage.ICarbonadoRepositoryConstants;
 
 /**
  * Provider of C3P0 based JDBC repositories.
  */
 public class CarbonadoRepositoryProvider extends RepositoryProvider {
 
-	public static final String ID = "net.ageto.gyrex.persistence.carbonado";
-
 	/**
 	 * Creates a new instance.
 	 */
 	public CarbonadoRepositoryProvider() {
-		super(ID, CarbonadoRepository.class);
+		super(ICarbonadoRepositoryConstants.PROVIDER_ID, CarbonadoRepository.class);
 	}
 
 	@Override

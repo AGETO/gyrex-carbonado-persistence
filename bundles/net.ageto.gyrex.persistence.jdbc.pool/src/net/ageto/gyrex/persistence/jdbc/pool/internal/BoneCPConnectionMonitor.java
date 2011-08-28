@@ -34,7 +34,7 @@ public class BoneCPConnectionMonitor extends AbstractConnectionHook {
 	private static final Logger LOG = LoggerFactory.getLogger(BoneCPConnectionMonitor.class);
 
 	private static final int INITIAL_CONNECT_DELAY = 1000;
-	private static final int MAX_CONNECT_DELAY = 60000; // don't wait more than 60 seconds
+	private static final int MAX_CONNECT_DELAY = 30000; // don't wait more than 30 seconds
 
 	private final String poolId;
 	private final String debugInfo;
@@ -50,7 +50,7 @@ public class BoneCPConnectionMonitor extends AbstractConnectionHook {
 		if (delay < INITIAL_CONNECT_DELAY) {
 			return delay = INITIAL_CONNECT_DELAY;
 		}
-		return delay = delay < MAX_CONNECT_DELAY ? delay * 2 : MAX_CONNECT_DELAY;
+		return delay = Math.min(MAX_CONNECT_DELAY, delay * 2);
 	}
 
 	@Override

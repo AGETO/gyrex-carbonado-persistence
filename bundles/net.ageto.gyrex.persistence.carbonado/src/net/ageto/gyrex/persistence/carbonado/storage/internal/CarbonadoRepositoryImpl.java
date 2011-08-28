@@ -155,7 +155,7 @@ public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 	}
 
 	@Override
-	protected Repository getOrCreateRepository() {
+	protected Repository getOrCreateRepository() throws ResourceFailureException {
 		// overriden for package-visibility
 		return super.getOrCreateRepository();
 	}

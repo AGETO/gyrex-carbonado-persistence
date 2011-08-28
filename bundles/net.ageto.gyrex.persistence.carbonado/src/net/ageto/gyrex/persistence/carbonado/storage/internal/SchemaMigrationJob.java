@@ -94,7 +94,14 @@ public class SchemaMigrationJob extends Job {
 	protected IStatus run(final IProgressMonitor progressMonitor) {
 		final SubMonitor monitor = SubMonitor.convert(progressMonitor, String.format("Verifying database schema for '%s'...", repository.getRepositoryId()), 100);
 
-		final Repository cRepository = repository.getOrCreateRepository();
+		Repository cRepository;
+		try {
+			cRepository = repository.getOrCreateRepository();
+		} catch (final Exception e) {
+			LOG.error("Failed to open repository {}. {}", new Object[] { repository.getRepositoryId(), ExceptionUtils.getRootCauseMessage(e), e });
+			repository.setError(String.format("Failed to open repository. Please check server logs. %s", ExceptionUtils.getRootCauseMessage(e)));
+			return Status.CANCEL_STATUS;
+		}
 
 		// check if JDBC database
 		final JDBCConnectionCapability jdbcConnectionCapability = cRepository.getCapability(JDBCConnectionCapability.class);

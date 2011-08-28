@@ -119,7 +119,7 @@ public abstract class CarbonadoRepository extends Repository implements ICarbona
 	 * @nooverride This method is not intended to be re-implemented or extended
 	 *             by clients.
 	 */
-	protected com.amazon.carbonado.Repository getOrCreateRepository() {
+	protected com.amazon.carbonado.Repository getOrCreateRepository() throws ResourceFailureException {
 		final com.amazon.carbonado.Repository repository = repositoryRef.get();
 		if (null != repository) {
 			return repository;

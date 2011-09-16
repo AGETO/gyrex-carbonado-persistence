@@ -58,7 +58,7 @@ public class SchemaMigrationJob extends Job {
 	}
 
 	/** STATUS2 */
-	public static final Status NOT_AVAILABLE = new Status(IStatus.INFO, CarbonadoActivator.SYMBOLIC_NAME, "Not available.");
+	public static final Status NOT_AVAILABLE = new Status(IStatus.INFO, CarbonadoActivator.SYMBOLIC_NAME, "Status information not available.");
 
 	private static final Logger LOG = LoggerFactory.getLogger(SchemaMigrationJob.class);
 
@@ -85,6 +85,11 @@ public class SchemaMigrationJob extends Job {
 		setRule(new RepositoryRule(repository));
 	}
 
+	/**
+	 * the {@link SchemaMigrationJob#schemaStatus} is updated at every touch of the repository.
+	 * 
+	 * @return the current schemaStatus or {@link SchemaMigrationJob#NOT_AVAILABLE} if none is set
+	 */
 	public IStatus getSchemaStatus() {
 		final IStatus status = schemaStatus;
 		return null != status ? status : NOT_AVAILABLE;
@@ -99,15 +104,16 @@ public class SchemaMigrationJob extends Job {
 			cRepository = repository.getOrCreateRepository();
 		} catch (final Exception e) {
 			LOG.error("Failed to open repository {}. {}", new Object[] { repository.getRepositoryId(), ExceptionUtils.getRootCauseMessage(e), e });
-			repository.setError(String.format("Failed to open repository. Please check server logs. %s", ExceptionUtils.getRootCauseMessage(e)));
-			return Status.CANCEL_STATUS;
+			String message = String.format("Failed to open repository. Please check server logs. %s", ExceptionUtils.getRootCauseMessage(e));
+			repository.setError(message);
+			return schemaStatus = buildStatusInternal(IStatus.CANCEL, message);
 		}
 
 		// check if JDBC database
 		final JDBCConnectionCapability jdbcConnectionCapability = cRepository.getCapability(JDBCConnectionCapability.class);
 		if (jdbcConnectionCapability == null) {
 			// non JDBC repository means auto-updating schema
-			return Status.OK_STATUS;
+			return schemaStatus = Status.OK_STATUS;
 		}
 
 		// check if transaction in progress
@@ -120,7 +126,7 @@ public class SchemaMigrationJob extends Job {
 			// don't fail although this should be a programming error
 			LOG.debug("No content types assigned to repository '{}'.", repository.getDescription());
 			repository.setError(null);
-			return Status.OK_STATUS;
+			return schemaStatus = Status.OK_STATUS;
 		}
 
 		// verify schemas
@@ -128,8 +134,9 @@ public class SchemaMigrationJob extends Job {
 			schemaStatus = verifySchemas(contentTypes, jdbcConnectionCapability, monitor.newChild(50));
 		} catch (final Exception e) {
 			LOG.error("Failed to verify database schema for database {} (repository {}). {}", new Object[] { cRepository.getName(), repository.getRepositoryId(), ExceptionUtils.getRootCauseMessage(e), e });
-			repository.setError(String.format("Unable to verify database schema. Please check server logs. %s", ExceptionUtils.getRootCauseMessage(e)));
-			return Status.CANCEL_STATUS;
+			String message = String.format("Unable to verify database schema. Please check server logs. %s", ExceptionUtils.getRootCauseMessage(e));
+			repository.setError(message);
+			return schemaStatus = buildStatusInternal(IStatus.CANCEL, message);
 		}
 
 		// done
@@ -138,7 +145,7 @@ public class SchemaMigrationJob extends Job {
 		} else {
 			repository.setError(null);
 		}
-		return Status.OK_STATUS;
+		return schemaStatus = Status.OK_STATUS;
 	}
 
 	private IStatus verifySchema(final RepositoryContentType contentType, final Connection connection, final IProgressMonitor monitor) {
@@ -147,7 +154,7 @@ public class SchemaMigrationJob extends Job {
 		final DatabaseSchemaSupport schemaSupport = CarbonadoActivator.getInstance().getSchemaSupportTracker().getSchemaSupport(contentType);
 		if (null == schemaSupport) {
 			// no schema support but JDBC repository means "managed externally" (so we assume "ok")
-			return Status.OK_STATUS;
+			return schemaStatus = Status.OK_STATUS;
 		}
 
 		// check if provisioned first
@@ -156,7 +163,7 @@ public class SchemaMigrationJob extends Job {
 			provisioningStatus = schemaSupport.isProvisioned(repository, contentType, connection);
 			if (provisioningStatus.isOK()) {
 				// all good
-				return provisioningStatus;
+				return schemaStatus = provisioningStatus;
 			}
 		} catch (final RuntimeException e) {
 			// only fail if not migrating, otherwise we do make a migration attempt
@@ -173,15 +180,15 @@ public class SchemaMigrationJob extends Job {
 		if (migrate) {
 			final IStatus result = schemaSupport.provision(repository, contentType, connection, subMonitor.newChild(10));
 			if (result.matches(IStatus.CANCEL | IStatus.ERROR)) {
-				return result;
+				return schemaStatus = result;
 			}
 
 			// all good
-			return Status.OK_STATUS;
+			return schemaStatus = Status.OK_STATUS;
 		}
 
 		if (null != provisioningStatus) {
-			return provisioningStatus;
+			return schemaStatus = provisioningStatus;
 		}
 
 		// fail
@@ -214,7 +221,7 @@ public class SchemaMigrationJob extends Job {
 				connection.rollback();
 			}
 
-			return result;
+			return schemaStatus = result;
 		} finally {
 			if (null != connection) {
 				try {
@@ -238,4 +245,7 @@ public class SchemaMigrationJob extends Job {
 		}
 	}
 
+	private IStatus buildStatusInternal(int severity, String message) {
+		return new Status(severity, CarbonadoActivator.SYMBOLIC_NAME, message);
+	}
 }

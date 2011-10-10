@@ -112,7 +112,8 @@ public class SchemaMigrationJob extends Job {
 			LOG.error("Failed to open repository {}. {}", new Object[] { repository.getRepositoryId(), ExceptionUtils.getRootCauseMessage(e), e });
 			final String message = String.format("Failed to open repository. Please check server logs. %s", ExceptionUtils.getRootCauseMessage(e));
 			repository.setError(message);
-			return schemaStatus = buildStatusInternal(IStatus.CANCEL, message);
+			schemaStatus = buildStatusInternal(IStatus.CANCEL, message);
+			return Status.CANCEL_STATUS;
 		}
 
 		// check if JDBC database
@@ -142,17 +143,18 @@ public class SchemaMigrationJob extends Job {
 			LOG.error("Failed to verify database schema for database {} (repository {}). {}", new Object[] { cRepository.getName(), repository.getRepositoryId(), ExceptionUtils.getRootCauseMessage(e), e });
 			final String message = String.format("Unable to verify database schema. Please check server logs. %s", ExceptionUtils.getRootCauseMessage(e));
 			repository.setError(message);
-			return schemaStatus = buildStatusInternal(IStatus.CANCEL, message);
+			schemaStatus = buildStatusInternal(IStatus.CANCEL, message);
+			return Status.CANCEL_STATUS;
 		}
 
 		// done
 		if ((null != schemaStatus) && schemaStatus.matches(IStatus.ERROR)) {
 			repository.setError(String.format("Database schema verification failed. Please check database %s.", repository.getDescription()));
-			return schemaStatus;
 		} else {
 			repository.setError(null);
-			return schemaStatus = Status.OK_STATUS;
+			schemaStatus = Status.OK_STATUS;
 		}
+		return Status.OK_STATUS;
 	}
 
 	private IStatus verifySchema(final RepositoryContentType contentType, final Connection connection, final IProgressMonitor monitor) {

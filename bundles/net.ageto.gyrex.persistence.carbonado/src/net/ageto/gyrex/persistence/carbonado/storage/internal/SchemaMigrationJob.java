@@ -148,10 +148,11 @@ public class SchemaMigrationJob extends Job {
 		// done
 		if ((null != schemaStatus) && schemaStatus.matches(IStatus.ERROR)) {
 			repository.setError(String.format("Database schema verification failed. Please check database %s.", repository.getDescription()));
+			return schemaStatus;
 		} else {
 			repository.setError(null);
+			return schemaStatus = Status.OK_STATUS;
 		}
-		return schemaStatus = Status.OK_STATUS;
 	}
 
 	private IStatus verifySchema(final RepositoryContentType contentType, final Connection connection, final IProgressMonitor monitor) {

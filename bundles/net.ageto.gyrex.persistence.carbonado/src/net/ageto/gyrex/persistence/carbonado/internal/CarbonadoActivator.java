@@ -17,7 +17,6 @@ import org.eclipse.gyrex.common.services.IServiceProxy;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
-import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.jdbc.DataSourceFactory;
 
@@ -70,7 +69,7 @@ public class CarbonadoActivator extends BaseBundleActivator {
 		schemaSupportTracker = new SchemaSupportTracker(context);
 		schemaSupportTracker.open();
 
-		dataSourceSupport = getServiceHelper().trackService(DataSourceSupport.class, context.createFilter(DataSourceSupport.POOL_FILTER));
+		dataSourceSupport = getServiceHelper().trackService(DataSourceSupport.class, DataSourceSupport.POOL_FILTER);
 	}
 
 	@Override
@@ -116,8 +115,8 @@ public class CarbonadoActivator extends BaseBundleActivator {
 		}
 
 		try {
-			return getServiceHelper().trackService(DataSourceFactory.class, bundleContext.createFilter(POOL_DSF_FILTER)).getService();
-		} catch (final InvalidSyntaxException e) {
+			return getServiceHelper().trackService(DataSourceFactory.class, POOL_DSF_FILTER).getService();
+		} catch (final IllegalArgumentException e) {
 			throw new IllegalStateException(String.format("Unable to locate pool data source factory. Please check the filter string. %s", e.getMessage()), e);
 		}
 	}

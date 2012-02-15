@@ -11,7 +11,6 @@
  */
 package net.ageto.gyrex.persistence.jdbc.pool.internal;
 
-import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
@@ -21,11 +20,11 @@ import org.apache.commons.lang.text.StrBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jolbox.bonecp.BoneCP;
 import com.jolbox.bonecp.ConnectionHandle;
 import com.jolbox.bonecp.PoolUtil;
 import com.jolbox.bonecp.hooks.AbstractConnectionHook;
 import com.jolbox.bonecp.hooks.AcquireFailConfig;
+import com.jolbox.bonecp.hooks.ConnectionState;
 
 /**
  * Connection monitor for BoneCP.
@@ -144,40 +143,6 @@ public class BoneCPConnectionMonitor extends AbstractConnectionHook {
 	}
 
 	@Override
-	public boolean onConnectionException(final ConnectionHandle connection, final String state, final Throwable t) {
-		// if it's a communication exception, a mysql deadlock or an implementation-specific error code, flag this connection as being potentially broken.
-		// state == 40001 is mysql specific triggered when a deadlock is detected
-		// state == HY000 is firebird specific triggered when a connection is broken
-		final char firstChar = state.charAt(0);
-		if (state.equals("40001") || state.equals("HY000") || state.startsWith("08") || ((firstChar >= '5') && (firstChar <= '9')) || ((firstChar >= 'I') && (firstChar <= 'Z'))) {
-			// assume broken
-			LOG.warn("[{}] {}: Broken connection - State {} - {}", new Object[] { poolId, debugInfo, state, getMessage(t) });
-
-			// handle MySQL connection issues in a special way
-			// (http://jolbox.com/forum/viewtopic.php?f=3&t=136&start=10#p694)
-			if (state.equals("08S01")) {
-				LOG.warn("[{}] {}: Detected MySQL connection issue. Attempting termination of all connections in pool.", new Object[] { poolId, debugInfo, state, getMessage(t) });
-				final BoneCP pool = connection.getPool();
-				try {
-					final Method terminateAllConnections = pool.getClass().getDeclaredMethod("terminateAllConnections", (Class[]) null);
-					if (!terminateAllConnections.isAccessible()) {
-						terminateAllConnections.setAccessible(true);
-					}
-					terminateAllConnections.invoke(pool, (Object[]) null);
-				} catch (final Exception e) {
-					// ignore
-					LOG.warn("[{}] {}: Unable to terminate all existing connections. Pool might contain broken connections. {}", new Object[] { poolId, debugInfo, getMessage(t) });
-				}
-			}
-
-			return true;
-		}
-
-		// not broken
-		return false;
-	}
-
-	@Override
 	public void onDestroy(final ConnectionHandle connection) {
 		if (PoolDebug.debug) {
 			LOG.debug("[{}] {}: {} - {}", new Object[] { poolId, debugInfo, "connection destroyed", connection });
@@ -185,7 +150,20 @@ public class BoneCPConnectionMonitor extends AbstractConnectionHook {
 	}
 
 	@Override
+	public ConnectionState onMarkPossiblyBroken(final ConnectionHandle connection, final String state, final SQLException e) {
+		// handle MySQL connection issues in a special way
+		// (http://jolbox.com/forum/viewtopic.php?f=3&t=136&start=10#p694)
+		if (state.equals("08S01")) {
+			LOG.error("[{}] {}: Detected MySQL connection issue. All connections in pool will be terminated.", new Object[] { poolId, debugInfo, state, getMessage(e) });
+			return ConnectionState.TERMINATE_ALL_CONNECTIONS;
+		}
+
+		// default behavior
+		return super.onMarkPossiblyBroken(connection, state, e);
+	}
+
+	@Override
 	public void onQueryExecuteTimeLimitExceeded(final ConnectionHandle handle, final Statement statement, final String sql, final Map<Object, Object> logParams, final long timeElapsedInNs) {
-		LOG.warn("[{}] [SLOW QUERY] {} ({}ns): {}", new Object[] { poolId, debugInfo, timeElapsedInNs, PoolUtil.fillLogParams(sql, logParams) });
+		LOG.error("[{}] [SLOW QUERY] {} ({}ns): {}", new Object[] { poolId, debugInfo, timeElapsedInNs, PoolUtil.fillLogParams(sql, logParams) });
 	}
 }

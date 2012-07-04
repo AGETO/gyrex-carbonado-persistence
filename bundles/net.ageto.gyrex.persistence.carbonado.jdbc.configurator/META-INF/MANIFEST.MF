@@ -20,7 +20,8 @@ Require-Bundle: net.ageto.gyrex.persistence.carbonado;bundle-version="1.0.0",
  org.eclipse.gyrex.common;bundle-version="1.0.0",
  org.eclipse.equinox.preferences;bundle-version="3.3.0",
  org.eclipse.equinox.security;bundle-version="1.0.200",
- org.eclipse.gyrex.monitoring;bundle-version="1.0.0"
+ org.eclipse.gyrex.monitoring;bundle-version="1.0.0",
+ net.ageto.gyrex.persistence.jdbc.pool;bundle-version="1.0.0"
 Service-Component: OSGI-INF/driverdatasource.xml, OSGI-INF/pooldatasource.xml
 Export-Package: net.ageto.gyrex.persistence.carbonado.jdbc.configurator;version="1.0.0",
  net.ageto.gyrex.persistence.carbonado.jdbc.configurator.internal;x-internal:=true

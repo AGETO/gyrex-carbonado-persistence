@@ -20,12 +20,14 @@ import org.eclipse.gyrex.server.Platform;
 
 import net.ageto.gyrex.persistence.carbonado.jdbc.configurator.IPoolConstants;
 import net.ageto.gyrex.persistence.carbonado.storage.spi.jdbc.DataSourceSupport;
+import net.ageto.gyrex.persistence.jdbc.pool.internal.BoneCPConnectionMonitor;
 
 import com.jolbox.bonecp.BoneCPDataSource;
 
 /**
  * A pooled {@link DataSourceSupport}
  */
+@SuppressWarnings("restriction")
 public class PooledDataSource extends DataSourceSupport {
 
 	private DataSourceSupport driverDataSource;
@@ -59,8 +61,8 @@ public class PooledDataSource extends DataSourceSupport {
 			// turn on tracking of unreleased connections in development mode only
 			// FIXME: disabled because of issues with leaked resources
 //			ds.setCloseConnectionWatch(true);
-			// wait up to 1 minute for a connection to be released back to the pool
-//			ds.setCloseConnectionWatchTimeout(600000); // 10min
+			// wait for a connection to be released back to the pool
+//			ds.setCloseConnectionWatchTimeoutInMs(100000); // 10s
 		} else {
 			// use a larger pool in production mode
 			ds.setPartitionCount(getPartitionCount(preferences, 3));

@@ -14,6 +14,7 @@ package net.ageto.gyrex.persistence.jdbc.pool.internal;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang.text.StrBuilder;
@@ -48,9 +49,40 @@ public class BoneCPConnectionMonitor extends AbstractConnectionHook {
 
 	private volatile int delay;
 
+	private final CopyOnWriteArraySet<ConnectionHandle> closingConnections = new CopyOnWriteArraySet<ConnectionHandle>();
+
 	public BoneCPConnectionMonitor(final String poolId, final String debugInfo) {
 		this.poolId = poolId;
 		this.debugInfo = debugInfo;
+	}
+
+	private void closeConnectionHandle(final ConnectionHandle connection) {
+		// ignore cyclic access
+		if (closingConnections.contains(connection)) {
+			if (PoolDebug.debug) {
+				LOG.trace("[{}] {}: {} - {}", new Object[] { poolId, debugInfo, "ignoring cyclic close request", connection });
+			}
+			return;
+		}
+
+		if (PoolDebug.debug) {
+			LOG.debug("[{}] {}: {} - {}", new Object[] { poolId, debugInfo, "closing connection", connection });
+		}
+
+		// protect against cyclic entrance (the call to close below can trigger the hook again)
+		closingConnections.add(connection);
+		try {
+			connection.close();
+		} catch (final SQLException e) {
+			LOG.error("[{}] {}: Unable to close connection and return it to the pool: {}", new Object[] { poolId, debugInfo, getMessage(e) });
+		} finally {
+			closingConnections.remove(connection);
+		}
+
+		if (PoolDebug.debug) {
+			LOG.trace("[{}] {}: {} - {}", new Object[] { poolId, debugInfo, "connection closed", connection });
+		}
+
 	}
 
 	private String getMessage(final Throwable t) {
@@ -140,6 +172,17 @@ public class BoneCPConnectionMonitor extends AbstractConnectionHook {
 		if (PoolDebug.debug) {
 			LOG.debug("[{}] {}: {} - {}", new Object[] { poolId, debugInfo, "connection check-out", connection });
 		}
+
+		// never check out broken connections
+		if (connection.isPossiblyBroken() && !connection.isConnectionAlive()) {
+			LOG.warn("[{}] {}: Detected a broken connection during check-out. Connection will be closed to prevent connection leaks. ({})", new Object[] { poolId, debugInfo, connection });
+			closeConnectionHandle(connection);
+		}
+	}
+
+	@Override
+	public boolean onConnectionException(final ConnectionHandle connection, final String state, final Throwable t) {
+		return super.onConnectionException(connection, state, t);
 	}
 
 	@Override
@@ -154,6 +197,12 @@ public class BoneCPConnectionMonitor extends AbstractConnectionHook {
 		// handle MySQL connection issues in a special way
 		// (http://jolbox.com/forum/viewtopic.php?f=3&t=136&start=10#p694)
 		if (state.equals("08S01")) {
+			// the connection is broken; close it immediatly so that 
+			// it will be released back to the pool and terminated together 
+			// with all other connections
+			closeConnectionHandle(connection);
+
+			// terminate all other connections in pool
 			LOG.error("[{}] {}: Detected MySQL connection issue. All connections in pool will be terminated.", new Object[] { poolId, debugInfo, state, getMessage(e) });
 			return ConnectionState.TERMINATE_ALL_CONNECTIONS;
 		}

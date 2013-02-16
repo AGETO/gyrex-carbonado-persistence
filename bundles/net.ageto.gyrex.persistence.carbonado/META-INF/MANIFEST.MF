@@ -2,11 +2,11 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Carbonado Repository Provider
 Bundle-SymbolicName: net.ageto.gyrex.persistence.carbonado
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 1.1.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Require-Bundle: org.eclipse.gyrex.common;bundle-version="[1.0.0,2.0.0)",
  org.eclipse.gyrex.context;bundle-version="[1.0.0,2.0.0)",
- org.eclipse.gyrex.monitoring;bundle-version="[1.0.0,2.0.0)",
+ org.eclipse.gyrex.monitoring;bundle-version="[1.2.0,2.0.0)",
  org.eclipse.gyrex.persistence;bundle-version="[1.0.0,2.0.0)",
  org.eclipse.gyrex.preferences;bundle-version="[1.0.0,2.0.0)",
  org.eclipse.core.jobs;bundle-version="[3.5.100,4.0.0)",
@@ -17,7 +17,8 @@ Export-Package: net.ageto.gyrex.persistence.carbonado.internal;x-internal:=true,
  net.ageto.gyrex.persistence.carbonado.storage;version="1.0.0",
  net.ageto.gyrex.persistence.carbonado.storage.internal;x-internal:=true,
  net.ageto.gyrex.persistence.carbonado.storage.internal.jdbc;x-internal:=true,
- net.ageto.gyrex.persistence.carbonado.storage.spi.jdbc;version="1.0.0"
+ net.ageto.gyrex.persistence.carbonado.storage.spi.jdbc;version="1.0.0",
+ net.ageto.gyrex.persistence.carbonado.storage.tracing;version="1.0.0"
 Bundle-ClassPath: .
 Bundle-ActivationPolicy: lazy
 Import-Package: javax.sql,

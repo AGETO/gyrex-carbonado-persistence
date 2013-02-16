@@ -42,7 +42,7 @@ public class SchemaSupportTracker extends ServiceTracker<DatabaseSchemaSupport, 
 
 	@Override
 	public DatabaseSchemaSupport addingService(final ServiceReference<DatabaseSchemaSupport> reference) {
-		final DatabaseSchemaSupport schemaSupport = (DatabaseSchemaSupport) super.addingService(reference);
+		final DatabaseSchemaSupport schemaSupport = super.addingService(reference);
 		if (null != schemaSupport) {
 			final Lock lock = schemaSupportByContentTypeMapLock.writeLock();
 			lock.lock();
@@ -76,7 +76,7 @@ public class SchemaSupportTracker extends ServiceTracker<DatabaseSchemaSupport, 
 
 	@Override
 	public void removedService(final ServiceReference<DatabaseSchemaSupport> reference, final DatabaseSchemaSupport service) {
-		final DatabaseSchemaSupport schemaSupport = (DatabaseSchemaSupport) service;
+		final DatabaseSchemaSupport schemaSupport = service;
 		if (null != schemaSupport) {
 			final Lock lock = schemaSupportByContentTypeMapLock.writeLock();
 			lock.lock();

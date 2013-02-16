@@ -20,6 +20,7 @@ import org.eclipse.gyrex.persistence.storage.exceptions.ResourceFailureException
 import org.eclipse.gyrex.server.Platform;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

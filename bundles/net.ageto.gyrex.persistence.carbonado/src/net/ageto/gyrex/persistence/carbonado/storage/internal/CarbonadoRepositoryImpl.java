@@ -11,7 +11,6 @@
  *******************************************************************************/
 package net.ageto.gyrex.persistence.carbonado.storage.internal;
 
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
@@ -37,6 +36,7 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.osgi.service.jdbc.DataSourceFactory;
 
 import org.apache.commons.lang.text.StrBuilder;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +44,9 @@ import net.ageto.gyrex.persistence.carbonado.internal.CarbonadoActivator;
 import net.ageto.gyrex.persistence.carbonado.internal.CarbonadoDebug;
 import net.ageto.gyrex.persistence.carbonado.storage.CarbonadoRepository;
 import net.ageto.gyrex.persistence.carbonado.storage.ICarbonadoRepositoryConstants;
+import net.ageto.gyrex.persistence.carbonado.storage.internal.jdbc.JdbcHelper;
+import net.ageto.gyrex.persistence.carbonado.storage.internal.jdbc.TracingDataSource;
+import net.ageto.gyrex.persistence.carbonado.storage.tracing.ThreadBasedTracingContext;
 import net.ageto.gyrex.persistence.jdbc.pool.IPoolDataSourceFactoryConstants;
 
 import com.amazon.carbonado.Repository;
@@ -52,18 +55,6 @@ import com.amazon.carbonado.repo.jdbc.JDBCRepositoryBuilder;
 public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 
 	private static final Logger LOG = LoggerFactory.getLogger(CarbonadoRepositoryImpl.class);
-
-	/**
-	 * Attempts to close a DataSource by searching for a "close" method.
-	 */
-	static void closeQuietly(final DataSource ds) {
-		try {
-			final Method closeMethod = ds.getClass().getMethod("close");
-			closeMethod.invoke(ds);
-		} catch (final Exception e) {
-			// no close
-		}
-	}
 
 	private final CarbonadoRepositoryContentTypeSupport carbonadoRepositoryContentTypeSupport;
 	private final AtomicReference<SchemaMigrationJob> schemaMigrationJobRef = new AtomicReference<SchemaMigrationJob>();
@@ -114,7 +105,7 @@ public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 		final DataSource dataSource = createDataSource();
 		try {
 			final JDBCRepositoryBuilder builder = new JDBCRepositoryBuilder();
-			builder.setDataSource(dataSource);
+			builder.setDataSource(TracingDataSource.wrap(dataSource, ThreadBasedTracingContext.INSTANCE));
 			builder.setName(generateRepoName(getRepositoryId(), repositoryPreferences));
 			builder.setAutoVersioningEnabled(true, null);
 			builder.setDataSourceLogging(CarbonadoDebug.dataSourceLogging);
@@ -122,11 +113,11 @@ public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 			return builder.build();
 		} catch (final Exception e) {
 			// close data source on error (COLUMBUS-1177)
-			closeQuietly(dataSource);
+			JdbcHelper.closeQuietly(dataSource);
 			throw e;
 		} catch (final Error e) {
 			// close data source on error (COLUMBUS-1177)
-			closeQuietly(dataSource);
+			JdbcHelper.closeQuietly(dataSource);
 			throw e;
 		}
 	}

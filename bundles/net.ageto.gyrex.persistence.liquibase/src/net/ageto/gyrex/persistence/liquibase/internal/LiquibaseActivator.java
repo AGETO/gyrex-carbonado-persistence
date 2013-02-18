@@ -22,6 +22,7 @@ public class LiquibaseActivator implements BundleActivator {
 	 * (non-Javadoc)
 	 * @see org.osgi.framework.BundleActivator#start(org.osgi.framework.BundleContext)
 	 */
+	@Override
 	public void start(final BundleContext bundleContext) throws Exception {
 		LiquibaseActivator.context = bundleContext;
 
@@ -41,6 +42,7 @@ public class LiquibaseActivator implements BundleActivator {
 	 * (non-Javadoc)
 	 * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
 	 */
+	@Override
 	public void stop(final BundleContext bundleContext) throws Exception {
 		LiquibaseActivator.context = null;
 

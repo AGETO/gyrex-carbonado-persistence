@@ -32,6 +32,7 @@ import org.osgi.service.prefs.BackingStoreException;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.WordUtils;
+
 import org.kohsuke.args4j.Argument;
 
 import net.ageto.gyrex.persistence.jdbc.pool.internal.PoolActivator;

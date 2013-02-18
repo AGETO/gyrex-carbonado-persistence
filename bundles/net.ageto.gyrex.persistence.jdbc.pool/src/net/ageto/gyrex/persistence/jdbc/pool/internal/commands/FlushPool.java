@@ -15,6 +15,7 @@ import org.eclipse.gyrex.common.console.Command;
 import org.eclipse.gyrex.common.identifiers.IdHelper;
 
 import org.apache.commons.lang.StringUtils;
+
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 

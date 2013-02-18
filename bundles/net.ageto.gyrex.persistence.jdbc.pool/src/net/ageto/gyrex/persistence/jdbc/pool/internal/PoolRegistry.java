@@ -35,6 +35,7 @@ import org.osgi.service.jdbc.DataSourceFactory;
 import org.osgi.service.prefs.BackingStoreException;
 
 import org.apache.commons.lang.StringUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

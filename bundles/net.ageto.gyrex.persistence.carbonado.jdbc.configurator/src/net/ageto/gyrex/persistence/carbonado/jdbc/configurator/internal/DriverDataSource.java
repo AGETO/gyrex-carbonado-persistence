@@ -13,9 +13,9 @@ package net.ageto.gyrex.persistence.carbonado.jdbc.configurator.internal;
 
 import javax.sql.DataSource;
 
-import org.eclipse.equinox.security.storage.StorageException;
-
 import org.eclipse.gyrex.persistence.storage.settings.IRepositoryPreferences;
+
+import org.eclipse.equinox.security.storage.StorageException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

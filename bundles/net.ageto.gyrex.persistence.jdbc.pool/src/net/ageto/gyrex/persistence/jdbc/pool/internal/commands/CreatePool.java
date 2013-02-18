@@ -21,6 +21,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.service.jdbc.DataSourceFactory;
 
 import org.apache.commons.lang.StringUtils;
+
 import org.kohsuke.args4j.Option;
 
 import net.ageto.gyrex.persistence.jdbc.pool.internal.PoolActivator;

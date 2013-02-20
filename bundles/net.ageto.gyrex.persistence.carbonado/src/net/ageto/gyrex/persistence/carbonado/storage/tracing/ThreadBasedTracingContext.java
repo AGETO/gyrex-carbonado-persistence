@@ -36,13 +36,15 @@ public class ThreadBasedTracingContext implements TracingContext {
 	@Override
 	public TimerMetric getTimer(final String name) {
 		final ConnectionMetrics metrics = connectionMetrics.get();
-		if (metrics == null) {
+		if (metrics == null)
 			return null;
-		}
-		if (TracingStatement.TIMER_SELECTS.equals(name)) {
+
+		if (TracingStatement.TIMER_SELECTS.equals(name))
 			return metrics.getTimerForReadQueries();
-		}
-		return metrics.getTimerForOther();
+		else if (TracingStatement.TIMER_FETCH.equals(name))
+			return metrics.getTimerForReadQueries();
+		else
+			return metrics.getTimerForOther();
 	}
 
 	@Override

@@ -46,7 +46,6 @@ import net.ageto.gyrex.persistence.carbonado.storage.CarbonadoRepository;
 import net.ageto.gyrex.persistence.carbonado.storage.ICarbonadoRepositoryConstants;
 import net.ageto.gyrex.persistence.carbonado.storage.internal.jdbc.JdbcHelper;
 import net.ageto.gyrex.persistence.carbonado.storage.internal.jdbc.TracingDataSource;
-import net.ageto.gyrex.persistence.carbonado.storage.tracing.ThreadBasedTracingContext;
 import net.ageto.gyrex.persistence.jdbc.pool.IPoolDataSourceFactoryConstants;
 
 import com.amazon.carbonado.Repository;
@@ -105,7 +104,7 @@ public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 		final DataSource dataSource = createDataSource();
 		try {
 			final JDBCRepositoryBuilder builder = new JDBCRepositoryBuilder();
-			builder.setDataSource(TracingDataSource.wrap(dataSource, ThreadBasedTracingContext.INSTANCE));
+			builder.setDataSource(TracingDataSource.wrap(dataSource));
 			builder.setName(generateRepoName(getRepositoryId(), repositoryPreferences));
 			builder.setAutoVersioningEnabled(true, null);
 			builder.setDataSourceLogging(CarbonadoDebug.dataSourceLogging);
@@ -155,14 +154,12 @@ public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 	protected IStatus getStatus() {
 		// check for internal error
 		final IStatus errorStatus = error;
-		if (null != errorStatus) {
+		if (null != errorStatus)
 			return errorStatus;
-		}
 
 		// check for ongoing schema migration
-		if (null != schemaMigrationJobRef.get()) {
+		if (null != schemaMigrationJobRef.get())
 			return new Status(IStatus.CANCEL, CarbonadoActivator.SYMBOLIC_NAME, String.format("Schema verifivation in progress for repository '%s'.", getRepositoryId()));
-		}
 
 		// ok
 		return Status.OK_STATUS;
@@ -194,10 +191,9 @@ public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 		}
 
 		// quick check
-		if (contentTypes.isEmpty()) {
+		if (contentTypes.isEmpty())
 			// nothing to do
 			return Status.OK_STATUS;
-		}
 
 		final SchemaMigrationJob migrationJob = new SchemaMigrationJob(this, contentTypes, migrate);
 		if (schemaMigrationJobRef.compareAndSet(null, migrationJob)) {
@@ -212,15 +208,13 @@ public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 			});
 			migrationJob.schedule();
 
-			if (!waitForFinish) {
+			if (!waitForFinish)
 				return Job.ASYNC_FINISH;
-			}
 
 			try {
 				LOG.debug("Waiting for database '{}' to finish verifying schema.", getDescription());
-				if (!waitSignal.await(3, TimeUnit.MINUTES)) {
+				if (!waitSignal.await(3, TimeUnit.MINUTES))
 					throw new ResourceFailureException(String.format("Timout waiting for database to verify schema. Please check database '%s'. ", getDescription()));
-				}
 				return migrationJob.getSchemaStatus();
 			} catch (final InterruptedException e) {
 				Thread.currentThread().interrupt();

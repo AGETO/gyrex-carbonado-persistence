@@ -19,13 +19,13 @@ import java.util.Calendar;
 import org.eclipse.gyrex.monitoring.metrics.StopWatch;
 import org.eclipse.gyrex.monitoring.metrics.TimerMetric;
 
-import net.ageto.gyrex.persistence.carbonado.storage.tracing.TracingContext;
+import net.ageto.gyrex.persistence.carbonado.storage.jdbc.ITracingConstants;
 
 public class TracingPreparedStatement<T extends PreparedStatement> extends TracingStatement<T> implements PreparedStatement {
 	protected final String sql;
 
-	TracingPreparedStatement(final Connection connection, final T ps, final String sql, final TracingContext tracingContext) {
-		super(connection, ps, tracingContext);
+	TracingPreparedStatement(final Connection connection, final T ps, final String sql) {
+		super(connection, ps);
 		this.sql = sql;
 	}
 
@@ -42,9 +42,8 @@ public class TracingPreparedStatement<T extends PreparedStatement> extends Traci
 	@Override
 	public boolean execute() throws SQLException {
 		final TimerMetric metric = getMetricForStatement(sql);
-		if (metric == null) {
+		if (metric == null)
 			return statement.execute();
-		}
 
 		final StopWatch watch = metric.processStarted();
 		try {
@@ -56,25 +55,30 @@ public class TracingPreparedStatement<T extends PreparedStatement> extends Traci
 
 	@Override
 	public ResultSet executeQuery() throws SQLException {
-		final TimerMetric metric = getMetricForSelects();
-		if (metric == null) {
+		final TimerMetric metric = getMetric(ITracingConstants.METRIC_ID_SELECTS);
+		if (metric == null)
 			return statement.executeQuery();
-		}
 
+		final ResultSet rs;
 		final StopWatch watch = metric.processStarted();
 		try {
-			return statement.executeQuery();
+			rs = statement.executeQuery();
 		} finally {
 			watch.stop();
 		}
+
+		final TimerMetric rsMetric = getMetric(ITracingConstants.METRIC_ID_FETCH);
+		if (rsMetric == null)
+			return rs;
+
+		return tracingResultSet(rs, rsMetric);
 	}
 
 	@Override
 	public int executeUpdate() throws SQLException {
-		final TimerMetric metric = getMetricForOther();
-		if (metric == null) {
+		final TimerMetric metric = getMetric(ITracingConstants.METRIC_ID_OTHER);
+		if (metric == null)
 			return statement.executeUpdate();
-		}
 
 		final StopWatch watch = metric.processStarted();
 		try {

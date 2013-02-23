@@ -17,8 +17,8 @@ Export-Package: net.ageto.gyrex.persistence.carbonado.internal;x-internal:=true,
  net.ageto.gyrex.persistence.carbonado.storage;version="1.0.0",
  net.ageto.gyrex.persistence.carbonado.storage.internal;x-internal:=true,
  net.ageto.gyrex.persistence.carbonado.storage.internal.jdbc;x-internal:=true,
- net.ageto.gyrex.persistence.carbonado.storage.spi.jdbc;version="1.0.0",
- net.ageto.gyrex.persistence.carbonado.storage.tracing;version="1.0.0"
+ net.ageto.gyrex.persistence.carbonado.storage.jdbc;version="1.0.0",
+ net.ageto.gyrex.persistence.carbonado.storage.spi.jdbc;version="1.0.0"
 Bundle-ClassPath: .
 Bundle-ActivationPolicy: lazy
 Import-Package: javax.sql,

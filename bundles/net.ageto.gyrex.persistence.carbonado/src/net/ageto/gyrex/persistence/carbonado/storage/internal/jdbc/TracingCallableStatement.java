@@ -13,12 +13,10 @@ import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.util.Calendar;
 
-import net.ageto.gyrex.persistence.carbonado.storage.tracing.TracingContext;
-
 public class TracingCallableStatement extends TracingPreparedStatement<CallableStatement> implements CallableStatement {
 
-	TracingCallableStatement(final Connection connection, final CallableStatement ps, final String sql, final TracingContext tracingContext) {
-		super(connection, ps, sql, tracingContext);
+	TracingCallableStatement(final Connection connection, final CallableStatement ps, final String sql) {
+		super(connection, ps, sql);
 	}
 
 	@Override

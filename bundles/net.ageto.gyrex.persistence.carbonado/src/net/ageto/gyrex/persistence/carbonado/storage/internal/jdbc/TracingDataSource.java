@@ -6,23 +6,25 @@ import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
-import net.ageto.gyrex.persistence.carbonado.storage.tracing.TracingContext;
+import org.eclipse.gyrex.monitoring.metrics.StopWatch;
+import org.eclipse.gyrex.monitoring.metrics.TimerMetric.TimerMetricFactory;
+import org.eclipse.gyrex.monitoring.profiling.Profiler;
+import org.eclipse.gyrex.monitoring.profiling.Transaction;
+
+import net.ageto.gyrex.persistence.carbonado.storage.jdbc.ITracingConstants;
 
 public class TracingDataSource implements DataSource {
 
-	public static DataSource wrap(final DataSource ds, final TracingContext tracingContext) {
-		if (ds == null) {
+	public static DataSource wrap(final DataSource ds) {
+		if (ds == null)
 			throw new IllegalArgumentException("DataSource must not be null!");
-		}
-		return new TracingDataSource(ds, tracingContext);
+		return new TracingDataSource(ds);
 	}
 
 	private final DataSource ds;
-	private final TracingContext tracingContext;
 
-	private TracingDataSource(final DataSource ds, final TracingContext tracingContext) {
+	private TracingDataSource(final DataSource ds) {
 		this.ds = ds;
-		this.tracingContext = tracingContext;
 	}
 
 	public void close() throws SQLException {
@@ -31,12 +33,30 @@ public class TracingDataSource implements DataSource {
 
 	@Override
 	public Connection getConnection() throws SQLException {
-		return new TracingConnection(ds.getConnection(), tracingContext);
+		final Transaction tx = Profiler.getTransaction();
+		if (tx == null)
+			return ds.getConnection();
+
+		final StopWatch watch = tx.getOrCreateMetric(ITracingConstants.METRIC_ID_CONNECTION_WAITS, TimerMetricFactory.NANOSECONDS).processStarted();
+		try {
+			return new TracingConnection(ds.getConnection());
+		} finally {
+			watch.stop();
+		}
 	}
 
 	@Override
 	public Connection getConnection(final String username, final String password) throws SQLException {
-		return new TracingConnection(ds.getConnection(username, password), tracingContext);
+		final Transaction tx = Profiler.getTransaction();
+		if (tx == null)
+			return ds.getConnection(username, password);
+
+		final StopWatch watch = tx.getOrCreateMetric(ITracingConstants.METRIC_ID_CONNECTION_WAITS, TimerMetricFactory.NANOSECONDS).processStarted();
+		try {
+			return new TracingConnection(ds.getConnection(username, password));
+		} finally {
+			watch.stop();
+		}
 	}
 
 	@Override

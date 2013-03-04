@@ -11,6 +11,9 @@
  */
 package net.ageto.gyrex.persistence.jdbc.pool.internal;
 
+import static net.ageto.gyrex.persistence.jdbc.pool.internal.cache.ThreadLocalCache.cacheAndWrapIfPossible;
+import static net.ageto.gyrex.persistence.jdbc.pool.internal.cache.ThreadLocalCache.getCached;
+
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -69,12 +72,21 @@ public class PoolDataSource implements DataSource {
 
 	@Override
 	public Connection getConnection() throws SQLException {
-		return configure(getPoolDataSource().getConnection());
+		final Connection cached = getCached(poolId);
+		if (cached != null)
+			return cached;
+
+		return cacheAndWrapIfPossible(poolId, configure(getPoolDataSource().getConnection()));
 	}
 
 	@Override
 	public Connection getConnection(final String username, final String password) throws SQLException {
-		return configure(getPoolDataSource().getConnection(username, password));
+		final String cacheKey = poolId + "::" + username + "::" + password;
+		final Connection cached = getCached(cacheKey);
+		if (cached != null)
+			return cached;
+
+		return cacheAndWrapIfPossible(cacheKey, configure(getPoolDataSource().getConnection(username, password)));
 	}
 
 	@Override

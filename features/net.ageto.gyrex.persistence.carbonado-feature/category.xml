@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/net.ageto.gyrex.persistence.carbonado_1.0.0.qualifier.jar" id="net.ageto.gyrex.persistence.carbonado" version="1.0.0.qualifier">
+      <category name="gyrex-extensions"/>
+   </feature>
+   <category-def name="gyrex-extensions" label="Gyrex Extensions">
+      <description>
+         Extensions for Gyrex
+      </description>
+   </category-def>
+</site>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="net.ageto.gyrex.persistence.carbonado"
+      label="Carbonado Persistence"
+      version="1.0.0.qualifier"
+      provider-name="AGETO Labs">
+
+   <description>
+      AGETO Feature pack for Carbonado based persistence in Gyrex
+   </description>
+
+   <copyright>
+      AGETO code is EPL. Carbonado, Liquibase and other dependencies do have their own license!
+   </copyright>
+
+   <license url="">
+      NO WARRANTY! However, professional support is available for purchase.
+   </license>
+
+   <plugin
+         id="net.ageto.gyrex.persistence.carbonado"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="net.ageto.gyrex.persistence.carbonado.jdbc.configurator"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="net.ageto.gyrex.persistence.jdbc.pool"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="net.ageto.gyrex.persistence.liquibase"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="net.ageto.liquibase.osgi"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.amazon.carbonado"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.jolbox.bonecp"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.cojen"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.joda.time"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>

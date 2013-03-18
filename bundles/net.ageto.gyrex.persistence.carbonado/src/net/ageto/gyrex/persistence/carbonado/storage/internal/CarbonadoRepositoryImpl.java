@@ -146,7 +146,7 @@ public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 
 	@Override
 	protected Repository getOrCreateRepository() throws ResourceFailureException {
-		// overriden for package-visibility
+		// overridden for package-visibility
 		return super.getOrCreateRepository();
 	}
 
@@ -185,7 +185,7 @@ public class CarbonadoRepositoryImpl extends CarbonadoRepository {
 		try {
 			final RepositoryContentTypeAssignments assignments = DefaultRepositoryLookupStrategy.getDefault().getContentTypeAssignments(getRepositoryId());
 			contentTypes = assignments.getContentTypes(true);
-		} catch (final IllegalStateException e) {
+		} catch (final Exception e) {
 			// fail if case of unresolved content types
 			throw new ResourceFailureException(e.getMessage());
 		}

@@ -8,6 +8,7 @@ Bundle-Vendor: AGETO Labd
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Import-Package: com.jolbox.bonecp,
  com.jolbox.bonecp.hooks,
+ com.mysql.jdbc;resolution:=optional,
  com.mysql.jdbc.jdbc2.optional;resolution:=optional,
  org.apache.commons.lang.exception;version="[2.4.0,3.0.0)",
  org.apache.commons.lang.text;version="[2.4.0,3.0.0)",

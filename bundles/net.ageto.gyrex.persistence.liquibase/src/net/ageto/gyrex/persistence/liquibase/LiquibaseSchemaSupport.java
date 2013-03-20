@@ -86,9 +86,8 @@ public class LiquibaseSchemaSupport extends DatabaseSchemaSupport {
 		@Override
 		public InputStream getResourceAsStream(final String file) throws IOException {
 			final URL entry = bundle.getEntry(basePath.append(file).toString());
-			if (null != entry) {
+			if (null != entry)
 				return entry.openStream();
-			}
 			return null;
 		}
 
@@ -122,9 +121,8 @@ public class LiquibaseSchemaSupport extends DatabaseSchemaSupport {
 
 	private String getChangeLogFile(final RepositoryContentType contentType) {
 		final String changeLogFile = changeLogsByContentTypeMap.get(contentType);
-		if (null == changeLogFile) {
+		if (null == changeLogFile)
 			throw new IllegalArgumentException(String.format("no change log file for content type: %s", contentType.toString()));
-		}
 		return changeLogFile;
 	}
 
@@ -136,77 +134,108 @@ public class LiquibaseSchemaSupport extends DatabaseSchemaSupport {
 
 	@Override
 	public IStatus isProvisioned(final CarbonadoRepository repository, final RepositoryContentType contentType, final Connection connection) throws IllegalArgumentException {
-		final String changeLogFile = getChangeLogFile(contentType);
-
 		LOG.debug("Verify content type '{}' for repository '{}'", contentType.getMediaType(), repository.getRepositoryId());
 
-		Database database = null;
-		try {
-			// get database
-			database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
+		final LiquibaseCallable<IStatus> callable = new LiquibaseCallable<IStatus>() {
+			@Override
+			public IStatus runWithLiquibase(final Liquibase liquibase) throws LiquibaseException {
+				LOG.debug("Collecting pending change sets.");
+				final List<ChangeSet> changeSets = liquibase.listUnrunChangeSets(repository.getRepositoryId());
 
-			// configure lock timeout
-			final LockService lockService = LockService.getInstance(database);
-			lockService.setChangeLogLockRecheckTime(500); // recheck every 500ms
-			lockService.setChangeLogLockWaitTime(2000); // wait not more than 2s
+				// check if fine
+				if (changeSets.isEmpty()) {
+					LOG.debug("No pending changes found. Database schema of repository {} is good to go.", repository.getRepositoryId());
+					return new Status(IStatus.OK, LiquibaseActivator.SYMBOLIC_NAME, String.format("No pending changes for content '%s' version %s.", contentType.getMediaTypeSubType(), contentType.getVersion()));
+				}
 
-			// create Liquibase object
-			final Liquibase liquibase = new Liquibase(changeLogFile, bundleResourceAccessor, database);
+				// build list of changes
+				final MultiStatus result = new MultiStatus(LiquibaseActivator.SYMBOLIC_NAME, 0, String.format("Pending changes for content '%s' version %s.", contentType.getMediaTypeSubType(), contentType.getVersion()), null);
 
-			LOG.debug("Collecting pending change sets.");
-			final List<ChangeSet> changeSets = liquibase.listUnrunChangeSets(repository.getRepositoryId());
+				// log warning
+				LOG.debug("Found pending change set. Database schema of repository {} needs to be migrated in order to support content of type {} (version {}).", new Object[] { repository.getDescription(), contentType.getMediaType(), contentType.getVersion() });
 
-			// check if fine
-			if (changeSets.isEmpty()) {
-				LOG.debug("No pending changes found. Database schema of repository {} is good to go.", repository.getRepositoryId());
-				return new Status(IStatus.OK, LiquibaseActivator.SYMBOLIC_NAME, String.format("No pending changes for content '%s' version %s.", contentType.getMediaTypeSubType(), contentType.getVersion()));
-			}
+				// log pending change sets
+				for (final ChangeSet changeSet : changeSets) {
+					LOG.debug("Found pending change set: {}", changeSet.toString(true));
 
-			// build list of changes
-			final MultiStatus result = new MultiStatus(LiquibaseActivator.SYMBOLIC_NAME, 0, String.format("Pending changes for content '%s' version %s.", contentType.getMediaTypeSubType(), contentType.getVersion()), null);
+					final String id = changeSet.getId();
+					final String description = StringUtils.isBlank(changeSet.getDescription()) ? changeSet.getFilePath() : changeSet.getDescription();
+					final String author = StringUtils.isBlank(changeSet.getAuthor()) ? "Mr. UNKNOWN" : changeSet.getAuthor();
 
-			// log warning
-			LOG.debug("Found pending change set. Database schema of repository {} needs to be migrated in order to support content of type {} (version {}).", new Object[] { repository.getDescription(), contentType.getMediaType(), contentType.getVersion() });
-
-			// log pending change sets
-			for (final ChangeSet changeSet : changeSets) {
-				LOG.debug("Found pending change set: {}", changeSet.toString(true));
-
-				final String id = changeSet.getId();
-				final String description = StringUtils.isBlank(changeSet.getDescription()) ? changeSet.getFilePath() : changeSet.getDescription();
-				final String author = StringUtils.isBlank(changeSet.getAuthor()) ? "Mr. UNKNOWN" : changeSet.getAuthor();
-
-				final MultiStatus changeStatus = new MultiStatus(LiquibaseActivator.SYMBOLIC_NAME, 0, String.format("%s (by %s): %s", id, author, description), null);
-				final List<Change> changes = changeSet.getChanges();
-				for (final Change change : changes) {
-					final SqlStatement[] statements = change.generateStatements(database);
-					for (final SqlStatement sqlStatement : statements) {
-						final Sql[] sqls = SqlGeneratorFactory.getInstance().generateSql(sqlStatement, database);
-						for (final Sql sql : sqls) {
-							changeStatus.add(new Status(IStatus.ERROR, LiquibaseActivator.SYMBOLIC_NAME, sql.toSql()));
+					final MultiStatus changeStatus = new MultiStatus(LiquibaseActivator.SYMBOLIC_NAME, 0, String.format("%s (by %s): %s", id, author, description), null);
+					final List<Change> changes = changeSet.getChanges();
+					for (final Change change : changes) {
+						final SqlStatement[] statements = change.generateStatements(liquibase.getDatabase());
+						for (final SqlStatement sqlStatement : statements) {
+							final Sql[] sqls = SqlGeneratorFactory.getInstance().generateSql(sqlStatement, liquibase.getDatabase());
+							for (final Sql sql : sqls) {
+								changeStatus.add(new Status(IStatus.ERROR, LiquibaseActivator.SYMBOLIC_NAME, sql.toSql()));
+							}
 						}
 					}
+					result.add(changeStatus);
 				}
-				result.add(changeStatus);
-			}
 
-			// give up
-			return result;
-		} catch (final LiquibaseException e) {
-			throw new IllegalStateException("Failed to collect pending change sets for repository '" + repository.getRepositoryId() + "'. " + e.getMessage(), e);
-		} finally {
-			// cleanup
-			if (null != database) {
-				LockService.removeInstance(database);
+				// give up
+				return result;
 			}
-		}
+		};
+
+		return runLiquibaseOperation(repository, contentType, connection, callable);
 	}
 
 	@Override
 	public IStatus provision(final CarbonadoRepository repository, final RepositoryContentType contentType, final Connection connection, final IProgressMonitor monitor) throws IllegalArgumentException {
-		final String changeLogFile = getChangeLogFile(contentType);
-
 		LOG.debug("Verify content type '{}' for repository '{}'", contentType.getMediaType(), repository.getRepositoryId());
+
+		final LiquibaseCallable<IStatus> callable = new LiquibaseCallable<IStatus>() {
+			@Override
+			public IStatus runWithLiquibase(final Liquibase liquibase) throws LiquibaseException {
+				LOG.debug("Collecting pending change sets...");
+				final List<ChangeSet> changeSets = liquibase.listUnrunChangeSets(repository.getRepositoryId());
+
+				// check if fine
+				if (changeSets.isEmpty()) {
+					LOG.debug("No pending change sets found.");
+					return Status.OK_STATUS;
+				}
+
+				// log pending change sets
+				for (final ChangeSet changeSet : changeSets) {
+					LOG.debug("Found pending change set: {}", changeSet.toString(true));
+				}
+
+				LOG.info("Migrating database schema for repository {}.", repository.getDescription());
+
+				// perform migration
+				try {
+					liquibase.update(repository.getRepositoryId());
+				} catch (final LiquibaseException e) {
+					LOG.error("Error while updating database schema for repository {}. {}", repository.getRepositoryId(), ExceptionUtils.getRootCauseMessage(e));
+					throw new IllegalStateException("Failed updating database for repository '" + repository.getRepositoryId() + "'. " + e.getMessage(), e);
+				}
+
+				// sanity check
+				final List<ChangeSet> unrunChangeSets = liquibase.listUnrunChangeSets(repository.getRepositoryId());
+				if (!unrunChangeSets.isEmpty()) {
+					for (final ChangeSet changeSet : unrunChangeSets) {
+						LOG.debug("Found unrun change set AFTER migration: {}", changeSet.toString(true));
+					}
+					throw new IllegalStateException("Found pending change sets AFTER database migration for repository '" + repository.getRepositoryId() + "'. Please check database manually.");
+				}
+
+				LOG.info("Successfully migrated database schema for repository {}.", repository.getDescription());
+
+				// fine
+				return Status.OK_STATUS;
+			}
+		};
+
+		return runLiquibaseOperation(repository, contentType, connection, callable);
+	}
+
+	public <T> T runLiquibaseOperation(final CarbonadoRepository repository, final RepositoryContentType contentType, final Connection connection, final LiquibaseCallable<T> callable) {
+		final String changeLogFile = getChangeLogFile(contentType);
 
 		Database database = null;
 		try {
@@ -221,43 +250,7 @@ public class LiquibaseSchemaSupport extends DatabaseSchemaSupport {
 			// create Liquibase object
 			final Liquibase liquibase = new Liquibase(changeLogFile, bundleResourceAccessor, database);
 
-			LOG.debug("Collecting pending change sets...");
-			final List<ChangeSet> changeSets = liquibase.listUnrunChangeSets(repository.getRepositoryId());
-
-			// check if fine
-			if (changeSets.isEmpty()) {
-				LOG.debug("No pending change sets found.");
-				return Status.OK_STATUS;
-			}
-
-			// log pending change sets
-			for (final ChangeSet changeSet : changeSets) {
-				LOG.debug("Found pending change set: {}", changeSet.toString(true));
-			}
-
-			LOG.info("Migrating database schema for repository {}.", repository.getDescription());
-
-			// perform migration
-			try {
-				liquibase.update(repository.getRepositoryId());
-			} catch (final LiquibaseException e) {
-				LOG.error("Error while updating database schema for repository {}. {}", repository.getRepositoryId(), ExceptionUtils.getRootCauseMessage(e));
-				throw new IllegalStateException("Failed updating database for repository '" + repository.getRepositoryId() + "'. " + e.getMessage(), e);
-			}
-
-			// sanity check
-			final List<ChangeSet> unrunChangeSets = liquibase.listUnrunChangeSets(repository.getRepositoryId());
-			if (!unrunChangeSets.isEmpty()) {
-				for (final ChangeSet changeSet : unrunChangeSets) {
-					LOG.debug("Found unrun change set AFTER migration: {}", changeSet.toString(true));
-				}
-				throw new IllegalStateException("Found pending change sets AFTER database migration for repository '" + repository.getRepositoryId() + "'. Please check database manually.");
-			}
-
-			LOG.info("Successfully migrated database schema for repository {}.", repository.getDescription());
-
-			// fine
-			return Status.OK_STATUS;
+			return callable.runWithLiquibase(liquibase);
 		} catch (final LiquibaseException e) {
 			throw new IllegalStateException("Failed to collect pending change sets for repository '" + repository.getRepositoryId() + "'. " + e.getMessage(), e);
 		} finally {

@@ -5,7 +5,7 @@ Bundle-SymbolicName: net.ageto.gyrex.persistence.jdbc.pool
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: net.ageto.gyrex.persistence.jdbc.pool.internal.PoolActivator
 Bundle-Vendor: AGETO Labs
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Service-Component: OSGI-INF/datasourcefactory.xml, OSGI-INF/commands.xml
 Import-Package: com.jolbox.bonecp;version="[0.7.1,1.0.0)",
  com.jolbox.bonecp.hooks;version="[0.7.1,1.0.0)",
@@ -23,6 +23,4 @@ Require-Bundle: org.eclipse.gyrex.boot;bundle-version="[1.0.0,2.0.0)",
  org.eclipse.gyrex.common;bundle-version="[1.0.0,2.0.0)",
  org.eclipse.gyrex.preferences;bundle-version="[1.0.0,2.0.0)"
 Export-Package: net.ageto.gyrex.persistence.jdbc.pool;version="1.0.0",
- net.ageto.gyrex.persistence.jdbc.pool.internal;x-internal:=true,
- net.ageto.gyrex.persistence.jdbc.pool.internal.cache;x-internal:=true,
- net.ageto.gyrex.persistence.jdbc.pool.internal.commands;x-internal:=true
+ net.ageto.gyrex.persistence.jdbc.pool.internal

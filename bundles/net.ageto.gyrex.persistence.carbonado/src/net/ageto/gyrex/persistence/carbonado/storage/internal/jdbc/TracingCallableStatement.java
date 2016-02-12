@@ -20,6 +20,11 @@ public class TracingCallableStatement extends TracingPreparedStatement<CallableS
 	}
 
 	@Override
+	public void closeOnCompletion() throws SQLException {
+		statement.closeOnCompletion();
+	}
+
+	@Override
 	public Array getArray(final int i) throws SQLException {
 		return statement.getArray(i);
 	}
@@ -225,6 +230,11 @@ public class TracingCallableStatement extends TracingPreparedStatement<CallableS
 	}
 
 	@Override
+	public <T> T getObject(final int parameterIndex, final Class<T> type) throws SQLException {
+		return statement.getObject(parameterIndex, type);
+	}
+
+	@Override
 	public Object getObject(final int i, final java.util.Map<String, Class<?>> map) throws SQLException {
 		return statement.getObject(i, map);
 	}
@@ -232,6 +242,11 @@ public class TracingCallableStatement extends TracingPreparedStatement<CallableS
 	@Override
 	public Object getObject(final String parameterName) throws SQLException {
 		return statement.getObject(parameterName);
+	}
+
+	@Override
+	public <T> T getObject(final String parameterName, final Class<T> type) throws SQLException {
+		return statement.getObject(parameterName, type);
 	}
 
 	@Override
@@ -349,6 +364,11 @@ public class TracingCallableStatement extends TracingPreparedStatement<CallableS
 	@Override
 	public java.net.URL getURL(final String parameterName) throws SQLException {
 		return statement.getURL(parameterName);
+	}
+
+	@Override
+	public boolean isCloseOnCompletion() throws SQLException {
+		return statement.isCloseOnCompletion();
 	}
 
 	@Override
@@ -670,4 +690,5 @@ public class TracingCallableStatement extends TracingPreparedStatement<CallableS
 	public boolean wasNull() throws SQLException {
 		return statement.wasNull();
 	}
+
 }

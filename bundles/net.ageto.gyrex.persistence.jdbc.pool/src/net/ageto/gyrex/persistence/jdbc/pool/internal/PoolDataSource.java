@@ -17,6 +17,7 @@ import static net.ageto.gyrex.persistence.jdbc.pool.internal.cache.ThreadLocalCa
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 
 import javax.sql.DataSource;
 
@@ -42,7 +43,7 @@ public class PoolDataSource implements DataSource {
 
 	/**
 	 * Creates a new instance.
-	 * 
+	 *
 	 * @param poolId
 	 *            the data source to wrap
 	 * @param catalog
@@ -97,6 +98,11 @@ public class PoolDataSource implements DataSource {
 	@Override
 	public PrintWriter getLogWriter() throws SQLException {
 		return getPoolDataSource().getLogWriter();
+	}
+
+	@Override
+	public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
+		throw new SQLFeatureNotSupportedException(); // the data source does not use java.util.logging
 	}
 
 	private DataSource getPoolDataSource() {

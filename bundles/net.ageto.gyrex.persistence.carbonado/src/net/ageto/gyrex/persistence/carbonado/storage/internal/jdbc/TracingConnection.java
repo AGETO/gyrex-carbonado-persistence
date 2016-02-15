@@ -15,6 +15,7 @@ import java.sql.SQLXML;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
+import java.util.concurrent.Executor;
 
 public class TracingConnection implements Connection {
 
@@ -22,6 +23,11 @@ public class TracingConnection implements Connection {
 
 	TracingConnection(final Connection connection) {
 		this.connection = connection;
+	}
+
+	@Override
+	public void abort(final Executor executor) throws SQLException {
+		connection.abort(executor);
 	}
 
 	@Override
@@ -112,6 +118,16 @@ public class TracingConnection implements Connection {
 	@Override
 	public DatabaseMetaData getMetaData() throws SQLException {
 		return connection.getMetaData();
+	}
+
+	@Override
+	public int getNetworkTimeout() throws SQLException {
+		return connection.getNetworkTimeout();
+	}
+
+	@Override
+	public String getSchema() throws SQLException {
+		return connection.getSchema();
 	}
 
 	@Override
@@ -246,6 +262,11 @@ public class TracingConnection implements Connection {
 	}
 
 	@Override
+	public void setNetworkTimeout(final Executor executor, final int milliseconds) throws SQLException {
+		connection.setNetworkTimeout(executor, milliseconds);
+	}
+
+	@Override
 	public void setReadOnly(final boolean readOnly) throws SQLException {
 		connection.setReadOnly(readOnly);
 	}
@@ -258,6 +279,11 @@ public class TracingConnection implements Connection {
 	@Override
 	public Savepoint setSavepoint(final String name) throws SQLException {
 		return connection.setSavepoint(name);
+	}
+
+	@Override
+	public void setSchema(final String schema) throws SQLException {
+		connection.setSchema(schema);
 	}
 
 	@Override

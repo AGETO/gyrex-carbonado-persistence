@@ -52,6 +52,11 @@ public class TracingStatement<T extends Statement> implements Statement {
 	}
 
 	@Override
+	public void closeOnCompletion() throws SQLException {
+		statement.closeOnCompletion();
+	}
+
+	@Override
 	public boolean execute(final String sql) throws SQLException {
 		final TimerMetric metric = getMetricForStatement(sql);
 		if (metric == null)
@@ -292,6 +297,11 @@ public class TracingStatement<T extends Statement> implements Statement {
 	@Override
 	public boolean isClosed() throws SQLException {
 		return statement.isClosed();
+	}
+
+	@Override
+	public boolean isCloseOnCompletion() throws SQLException {
+		return statement.isCloseOnCompletion();
 	}
 
 	@Override

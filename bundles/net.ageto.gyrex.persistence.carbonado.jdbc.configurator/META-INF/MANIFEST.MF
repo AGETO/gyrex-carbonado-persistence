@@ -5,7 +5,7 @@ Bundle-SymbolicName: net.ageto.gyrex.persistence.carbonado.jdbc.configurator
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: net.ageto.gyrex.persistence.carbonado.jdbc.configurator.internal.JdbcConfiguratorActivator
 Bundle-Vendor: AGETO Labd
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: com.jolbox.bonecp,
  com.jolbox.bonecp.hooks,
  com.mysql.jdbc;resolution:=optional,
